@@ -29,6 +29,7 @@ public interface UserService {
      * @return
      */
     UserDao getSafetyUser(String userId);
+    UserDao getUserById(String userId);
 
     /**
      * 用户注销

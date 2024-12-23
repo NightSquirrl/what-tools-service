@@ -1,5 +1,6 @@
 package com.whattools.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -76,8 +77,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDao> implements
 
     @Override
     public Object userLogin(String userAccount, String userPassword, HttpServletRequest request) {
-
-
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             return null;
@@ -92,6 +91,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDao> implements
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
+            log.info("no user");
             return null;
         }
         // 2. 加密
@@ -113,6 +113,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDao> implements
         UserDao userDao = new UserDao();
         userDao.setUserAccount(userAccount);
         userDao.setUserPassword(userPassword);
+        userDao.setId(user.getId());
         String token = tokenService.getToken(userDao);
         jsonObject.put("token", token);
         UserDao safetyUser = getSafetyUser(userDao);
@@ -122,7 +123,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDao> implements
 
     @Override
     public UserDao getSafetyUser(String userId) {
-        return null;
+        QueryWrapper<UserDao> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", userId);
+        UserDao user = userMapper.selectOne(queryWrapper);
+        return this.getSafetyUser(user);
+    }
+
+    @Override
+    public UserDao getUserById(String userId) {
+        QueryWrapper<UserDao> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", userId);
+        UserDao user = userMapper.selectOne(queryWrapper);
+        return user;
     }
 
     public UserDao getSafetyUser(UserDao originUser) {

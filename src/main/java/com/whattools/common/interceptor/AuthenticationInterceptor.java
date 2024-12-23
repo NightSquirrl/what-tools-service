@@ -1,14 +1,16 @@
 package com.whattools.common.interceptor;
 
+import com.alibaba.fastjson.JSON;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.whattools.annotation.PassToken;
 import com.whattools.annotation.UserLoginToken;
 import com.whattools.pojo.UserDao;
-import com.whattools.service.UserService;
+import com.whattools.service.impl.UserServiceImpl;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,18 +31,19 @@ import java.lang.reflect.Method;
 @Slf4j
 public class AuthenticationInterceptor implements HandlerInterceptor {
     @Resource
-    UserService userService;
+    UserServiceImpl userService;
+
     @Override
     public boolean preHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object object) throws Exception {
         // 从 http 请求头中取出 token
         String token = httpServletRequest.getHeader("Authorization");
         log.info("token:{}", token);
         // 如果不是映射到方法直接通过
-        if(!(object instanceof HandlerMethod)){
+        if (!(object instanceof HandlerMethod)) {
             return true;
         }
-        HandlerMethod handlerMethod=(HandlerMethod)object;
-        Method method=handlerMethod.getMethod();
+        HandlerMethod handlerMethod = (HandlerMethod) object;
+        Method method = handlerMethod.getMethod();
         //检查是否有passtoken注释，有则跳过认证
         if (method.isAnnotationPresent(PassToken.class)) {
             PassToken passToken = method.getAnnotation(PassToken.class);
@@ -60,10 +63,11 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
                 String userId;
                 try {
                     userId = JWT.decode(token).getAudience().get(0);
+
                 } catch (JWTDecodeException j) {
                     throw new RuntimeException("401");
                 }
-                UserDao user = userService.getSafetyUser(userId);
+                UserDao user = userService.getUserById(userId);
                 if (user == null) {
                     throw new RuntimeException("用户不存在，请重新登录");
                 }
@@ -84,6 +88,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
     public void postHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, ModelAndView modelAndView) throws Exception {
 
     }
+
     @Override
     public void afterCompletion(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, Exception e) throws Exception {
 
